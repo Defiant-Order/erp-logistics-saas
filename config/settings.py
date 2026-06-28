@@ -45,7 +45,8 @@ INSTALLED_APPS = [
     'common',
     'apps.core',
     'apps.catalog',
-    'apps.inventory'
+    'apps.inventory',
+    'apps.sales',
 ]
 
 AUTH_USER_MODEL = 'core.User'
