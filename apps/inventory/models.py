@@ -45,13 +45,16 @@ class OrdenCompra(BaseModel):
 
 
 class DetalleOrdenCompra(BaseModel):
-    """Linea de una OrdenCompra: que producto, cuanta cantidad y a que costo
-    se solicita. Necesario para ADR-003 (Costeo de Inventario, ver
-    docs/business/04): sin el costo unitario acordado no se puede recalcular
-    el costo promedio ponderado al recibir la mercaderia."""
+    """Linea de una OrdenCompra: que presentacion, cuanta cantidad y a que costo
+    se solicita. Se compra por Presentacion (ej. "10 Cajas"), no por Producto
+    suelto -- el producto se obtiene via presentacion.producto cuando se
+    necesite (ej. al generar el MovimientoInventario en unidad base, usando
+    presentacion.factor_conversion). Ver ADR-002 y ADR-003 en docs/business/04."""
 
     orden_compra = models.ForeignKey(OrdenCompra, on_delete=models.PROTECT, related_name="detalles")
-    producto = models.ForeignKey("catalog.Producto", on_delete=models.PROTECT, related_name="detalles_orden_compra")
+    presentacion = models.ForeignKey(
+        "catalog.Presentacion", on_delete=models.PROTECT, related_name="detalles_orden_compra"
+    )
     cantidad_solicitada = models.DecimalField(max_digits=12, decimal_places=4)
     costo_unitario = models.DecimalField(max_digits=12, decimal_places=4)
 
