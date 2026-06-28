@@ -7,8 +7,8 @@ from common.tenant_context import tenant_context
 
 @pytest.mark.django_db
 def test_tenant_manager_isolates_records_by_tenant():
-    tenant_a = Tenant.objects.create(name="Distribuidora A", slug="distribuidora-a")
-    tenant_b = Tenant.objects.create(name="Distribuidora B", slug="distribuidora-b")
+    tenant_a = Tenant.objects.create(razon_social="Distribuidora A", ruc="20100000001", slug="distribuidora-a")
+    tenant_b = Tenant.objects.create(razon_social="Distribuidora B", ruc="20100000002", slug="distribuidora-b")
 
     ExternalReference.unscoped.create(tenant=tenant_a, source_system="whatsapp", external_id="msg-1")
     ExternalReference.unscoped.create(tenant=tenant_b, source_system="whatsapp", external_id="msg-1")
@@ -26,8 +26,8 @@ def test_tenant_manager_isolates_records_by_tenant():
 
 @pytest.mark.django_db
 def test_tenant_manager_without_context_does_not_filter():
-    tenant_a = Tenant.objects.create(name="Distribuidora A", slug="distribuidora-a")
-    tenant_b = Tenant.objects.create(name="Distribuidora B", slug="distribuidora-b")
+    tenant_a = Tenant.objects.create(razon_social="Distribuidora A", ruc="20100000001", slug="distribuidora-a")
+    tenant_b = Tenant.objects.create(razon_social="Distribuidora B", ruc="20100000002", slug="distribuidora-b")
 
     ExternalReference.unscoped.create(tenant=tenant_a, source_system="whatsapp", external_id="msg-1")
     ExternalReference.unscoped.create(tenant=tenant_b, source_system="whatsapp", external_id="msg-1")
