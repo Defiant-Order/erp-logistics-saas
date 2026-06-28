@@ -17,6 +17,9 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path
 
+from apps.whatsapp.views import whatsapp_webhook
+
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('api/webhooks/whatsapp/', whatsapp_webhook, name='whatsapp-webhook'),
 ]
