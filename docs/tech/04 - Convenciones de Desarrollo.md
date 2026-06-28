@@ -14,6 +14,7 @@ Django debe estructurarse por "dominios de negocio", no agrupando todas las vist
 
 ## 3. Atomicidad en Base de Datos
 * Toda operación que afecte a más de una tabla (ej. Crear un Pedido y crear una ReservaInventario) debe ejecutarse obligatoriamente dentro de un bloque `transaction.atomic()` de Django. Si el paso final falla, ningún registro debe guardarse en la base de datos.
+* **Concurrencia (`select_for_update()`):** Se usa únicamente en operaciones donde dos requests simultáneas puedan competir por el mismo recurso físico (ej. dos pedidos reservando el último stock disponible de un producto). No es una convención a implementar de forma anticipada en el ticket de infraestructura base — se introduce recién cuando se construya `ReservaInventario` en `apps/sales`, sobre el caso de uso real.
 
 ## 4. Convenciones de Lógica
 * **Prohibición de Strings Mágicos:** Queda estrictamente prohibido comparar estados utilizando cadenas de texto en crudo (Ej. `if pedido.estado == "ENTREGADO"`). Todo el código debe referenciar la clase `TextChoices` (Ej. `if pedido.estado == OrderStatus.ENTREGADO`).
