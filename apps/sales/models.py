@@ -87,3 +87,54 @@ class DetallePedido(BaseModel):
 
     def __str__(self):
         return f"{self.cantidad} de {self.presentacion} (Pedido {self.pedido_id})"
+
+
+class ReservaInventario(BaseModel):
+    """Stock bloqueado temporalmente para garantizar el cumplimiento de un
+    Pedido confirmado. Vinculada a Producto (no a Presentacion) porque el
+    bloqueo ocurre en unidad base, segun BR-INV-01 (docs/business/03).
+    Maquina de estados: BR-VENTA-01, BR-VENTA-03, BR-VENTA-04."""
+
+    class Estado(models.TextChoices):
+        RESERVADA = "RESERVADA", "Reservada"
+        LIBERADA = "LIBERADA", "Liberada"
+        CONSUMIDA = "CONSUMIDA", "Consumida"
+
+    pedido = models.ForeignKey(Pedido, on_delete=models.PROTECT, related_name="reservas")
+    producto = models.ForeignKey("catalog.Producto", on_delete=models.PROTECT, related_name="reservas")
+    cantidad = models.DecimalField(max_digits=12, decimal_places=4)
+    estado = models.CharField(max_length=10, choices=Estado.choices, default=Estado.RESERVADA)
+
+    def save(self, *args, **kwargs):
+        if not self.tenant_id and self.pedido_id:
+            self.tenant_id = self.pedido.tenant_id
+        if self.pedido_id and self.tenant_id != self.pedido.tenant_id:
+            raise ValueError("La ReservaInventario debe pertenecer al mismo tenant que su Pedido.")
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"Reserva {self.cantidad} de producto {self.producto_id} ({self.estado})"
+
+
+class PedidoEstadoHistorico(BaseModel):
+    """Auditoria INMUTABLE de cada salto de estado logistico de un Pedido:
+    que estado, quien lo hizo y cuando. Ver ADR-009 en docs/business/04."""
+
+    pedido = models.ForeignKey(Pedido, on_delete=models.PROTECT, related_name="historico_estados")
+    estado_logistico = models.CharField(max_length=20, choices=Pedido.EstadoLogistico.choices)
+    changed_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="+")
+
+    def save(self, *args, **kwargs):
+        if not self._state.adding:
+            raise ValueError("PedidoEstadoHistorico es inmutable: no se puede modificar un registro ya creado.")
+        if not self.tenant_id and self.pedido_id:
+            self.tenant_id = self.pedido.tenant_id
+        if self.pedido_id and self.tenant_id != self.pedido.tenant_id:
+            raise ValueError("El PedidoEstadoHistorico debe pertenecer al mismo tenant que su Pedido.")
+        super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        raise ValueError("PedidoEstadoHistorico es inmutable: no se puede eliminar un registro.")
+
+    def __str__(self):
+        return f"Pedido {self.pedido_id} -> {self.estado_logistico} ({self.created_at})"
