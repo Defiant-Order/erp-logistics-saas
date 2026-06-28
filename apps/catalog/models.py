@@ -9,6 +9,12 @@ class Producto(BaseModel):
     nombre = models.CharField(max_length=255)
     sku = models.CharField(max_length=50)
     unidad_base = models.CharField(max_length=20, default="UND")
+    costo_promedio = models.DecimalField(
+        max_digits=12,
+        decimal_places=4,
+        default=0,
+        help_text="Costo promedio ponderado (ADR-003). Se recalcula en cada recepcion de compra.",
+    )
 
     class Meta:
         constraints = [

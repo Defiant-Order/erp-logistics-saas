@@ -11,7 +11,7 @@ class PresentacionInline(admin.TabularInline):
 
 @admin.register(Producto)
 class ProductoAdmin(admin.ModelAdmin):
-    list_display = ("nombre", "sku", "unidad_base", "tenant", "is_active")
+    list_display = ("nombre", "sku", "unidad_base", "costo_promedio", "tenant", "is_active")
     search_fields = ("nombre", "sku")
     list_filter = ("tenant",)
     inlines = [PresentacionInline]
