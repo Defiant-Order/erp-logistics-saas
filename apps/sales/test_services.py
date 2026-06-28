@@ -6,7 +6,7 @@ from apps.catalog.models import Presentacion, Producto
 from apps.core.models import Tenant, User
 from apps.inventory.models import Almacen, MovimientoInventario
 from apps.sales.models import Cliente, DetallePedido, Pedido, PedidoEstadoHistorico, ReservaInventario
-from apps.sales.services import StockInsuficienteError, confirmar_pedido
+from apps.sales.services import LimiteCreditoExcedidoError, StockInsuficienteError, confirmar_pedido
 
 
 @pytest.fixture
@@ -112,3 +112,44 @@ def test_confirmar_pedido_falla_si_no_esta_en_borrador(usuario, cliente, present
 
     with pytest.raises(ValueError):
         confirmar_pedido(pedido, usuario)
+
+
+@pytest.mark.django_db
+def test_confirmar_pedido_a_credito_rechaza_si_supera_limite(
+    usuario, cliente, presentacion, almacen, producto, tenant
+):
+    tenant.config.max_credit_limit = Decimal("100")
+    tenant.config.save()
+    _ingresar_stock(producto, almacen, Decimal("100"))
+    pedido = Pedido.objects.create(
+        cliente=cliente, condicion_pago=Pedido.CondicionPago.CREDITO, created_by=usuario, total=Decimal("500")
+    )
+    DetallePedido.objects.create(
+        pedido=pedido, presentacion=presentacion, cantidad=Decimal("2"), precio_unitario=Decimal("75")
+    )
+
+    with pytest.raises(LimiteCreditoExcedidoError):
+        confirmar_pedido(pedido, usuario)
+
+    pedido.refresh_from_db()
+    assert pedido.estado_logistico == Pedido.EstadoLogistico.BORRADOR
+
+
+@pytest.mark.django_db
+def test_confirmar_pedido_a_credito_permite_si_autorizado_por_superior(
+    usuario, cliente, presentacion, almacen, producto, tenant
+):
+    tenant.config.max_credit_limit = Decimal("100")
+    tenant.config.save()
+    _ingresar_stock(producto, almacen, Decimal("100"))
+    pedido = Pedido.objects.create(
+        cliente=cliente, condicion_pago=Pedido.CondicionPago.CREDITO, created_by=usuario, total=Decimal("500")
+    )
+    DetallePedido.objects.create(
+        pedido=pedido, presentacion=presentacion, cantidad=Decimal("2"), precio_unitario=Decimal("75")
+    )
+
+    confirmar_pedido(pedido, usuario, autorizado_por_superior=True)
+
+    pedido.refresh_from_db()
+    assert pedido.estado_logistico == Pedido.EstadoLogistico.CONFIRMADO
