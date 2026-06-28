@@ -12,7 +12,13 @@ La configuración sensible no vive en `config/settings.py`, se lee del entorno v
   * `SECRET_KEY` — clave de Django. Tiene un valor por defecto inseguro solo para que el proyecto arranque sin `.env`; en cualquier entorno real debe sobreescribirse.
   * `DEBUG` — `True`/`False`.
   * `ALLOWED_HOSTS` — lista separada por comas.
-  * `DATABASE_URL` — opcional. Si no está definida, Django usa SQLite local (`db.sqlite3`). Cuando se conecte Neon/Supabase, se setea aquí con el formato `postgres://usuario:password@host:5432/db` y no se toca código.
+  * `DATABASE_URL` — opcional. Si no está definida, Django usa SQLite local (`db.sqlite3`). Cuando se conecte Neon, se setea aquí con el formato `postgres://usuario:password@host:5432/db` y no se toca código.
+
+## 1.1. Zona horaria
+`USE_TZ = True` hace que Django guarde toda fecha/hora en UTC en la base de datos, sin importar la hora de pared del servidor Postgres (Neon), del contenedor Docker, o de la máquina local — eso es lo que nos hace resilientes a que esos tres relojes no coincidan. `TIME_ZONE = 'America/Lima'` solo controla cómo se *muestra* la hora (admin, templates); el dato persistido siempre es UTC.
+
+## 1.2. Neon (Postgres)
+Proyecto creado en la región **US East** (Neon no tiene región en Sudamérica; es la de menor latencia disponible desde Perú). Al desplegar en Google Cloud, la región de Cloud Run debe quedar lo más cerca posible de esa misma región de Neon, para minimizar la latencia app↔DB.
 
 ## 2. Base de datos en cada entorno
 * **Local (ahora):** SQLite, cero configuración. No se necesita Docker ni Postgres para empezar a programar.
