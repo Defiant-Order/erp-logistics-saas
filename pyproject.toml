@@ -6,6 +6,7 @@ addopts = "--reuse-db"
 [tool.ruff]
 line-length = 119
 target-version = "py313"
+extend-exclude = ["*/migrations/*"]
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I"]
