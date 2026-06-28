@@ -34,8 +34,10 @@ jobs:
 
       - name: Run tests
         run: |
+          set +e
           pytest
           code=$?
+          set -e
           if [ $code -eq 5 ]; then
             echo "No se recolectaron tests todavia (fase inicial del proyecto), no se considera fallo."
             exit 0
