@@ -42,3 +42,102 @@ class OrdenCompra(BaseModel):
 
     def __str__(self):
         return f"OC {self.id} - {self.proveedor.razon_social} ({self.estado})"
+
+
+class DetalleOrdenCompra(BaseModel):
+    """Linea de una OrdenCompra: que producto, cuanta cantidad y a que costo
+    se solicita. Necesario para ADR-003 (Costeo de Inventario, ver
+    docs/business/04): sin el costo unitario acordado no se puede recalcular
+    el costo promedio ponderado al recibir la mercaderia."""
+
+    orden_compra = models.ForeignKey(OrdenCompra, on_delete=models.PROTECT, related_name="detalles")
+    producto = models.ForeignKey("catalog.Producto", on_delete=models.PROTECT, related_name="detalles_orden_compra")
+    cantidad_solicitada = models.DecimalField(max_digits=12, decimal_places=4)
+    costo_unitario = models.DecimalField(max_digits=12, decimal_places=4)
+
+    def save(self, *args, **kwargs):
+        if not self.tenant_id and self.orden_compra_id:
+            self.tenant_id = self.orden_compra.tenant_id
+        if self.orden_compra_id and self.tenant_id != self.orden_compra.tenant_id:
+            raise ValueError("El DetalleOrdenCompra debe pertenecer al mismo tenant que su OrdenCompra.")
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.cantidad_solicitada} de producto {self.producto_id} (OC {self.orden_compra_id})"
+
+
+class Almacen(BaseModel):
+    """Ubicacion fisica de custodia. Ver docs/business/01."""
+
+    nombre = models.CharField(max_length=255)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["tenant", "nombre"], name="unique_almacen_nombre_por_tenant"),
+        ]
+
+    def __str__(self):
+        return self.nombre
+
+
+class RecepcionCompra(BaseModel):
+    """Certifica que la mercaderia de una OrdenCompra cruzo la puerta del almacen.
+    Ver docs/business/01 y BR-ABAST-02 en docs/business/03."""
+
+    orden_compra = models.ForeignKey(OrdenCompra, on_delete=models.PROTECT, related_name="recepciones")
+    almacen = models.ForeignKey(Almacen, on_delete=models.PROTECT, related_name="recepciones")
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="+")
+
+    def save(self, *args, **kwargs):
+        if not self.tenant_id and self.orden_compra_id:
+            self.tenant_id = self.orden_compra.tenant_id
+        if self.orden_compra_id and self.tenant_id != self.orden_compra.tenant_id:
+            raise ValueError("La RecepcionCompra debe pertenecer al mismo tenant que su OrdenCompra.")
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"Recepcion {self.id} de OC {self.orden_compra_id}"
+
+
+class MovimientoInventario(BaseModel):
+    """Kardex: registro INMUTABLE de entradas y salidas, unica fuente de verdad
+    del stock. Ver docs/business/01 y BR-INV-01 en docs/business/03.
+
+    El stock de un producto en un almacen no es una columna que se actualiza:
+    es la suma de cantidad de todos sus movimientos (ENTRADA suma, SALIDA resta).
+    """
+
+    class Tipo(models.TextChoices):
+        ENTRADA = "ENTRADA", "Entrada"
+        SALIDA = "SALIDA", "Salida"
+
+    producto = models.ForeignKey("catalog.Producto", on_delete=models.PROTECT, related_name="movimientos")
+    almacen = models.ForeignKey(Almacen, on_delete=models.PROTECT, related_name="movimientos")
+    tipo = models.CharField(max_length=10, choices=Tipo.choices)
+    cantidad = models.DecimalField(max_digits=12, decimal_places=4)
+    costo_unitario = models.DecimalField(
+        max_digits=12,
+        decimal_places=4,
+        null=True,
+        blank=True,
+        help_text="Costo al momento del movimiento. Obligatorio para ENTRADA; "
+        "el recalculo de costo promedio ponderado vive en un service futuro.",
+    )
+    recepcion_compra = models.ForeignKey(
+        RecepcionCompra, on_delete=models.PROTECT, null=True, blank=True, related_name="movimientos"
+    )
+
+    def save(self, *args, **kwargs):
+        if not self._state.adding:
+            raise ValueError("MovimientoInventario es inmutable: no se puede modificar un movimiento ya creado.")
+        if not self.tenant_id and self.almacen_id:
+            self.tenant_id = self.almacen.tenant_id
+        if self.almacen_id and self.tenant_id != self.almacen.tenant_id:
+            raise ValueError("El MovimientoInventario debe pertenecer al mismo tenant que su Almacen.")
+        super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        raise ValueError("MovimientoInventario es inmutable: no se puede eliminar un movimiento.")
+
+    def __str__(self):
+        return f"{self.tipo} {self.cantidad} de producto {self.producto_id} en {self.almacen_id}"
