@@ -7,11 +7,12 @@ from common.models import UUIDTimeStampedModel
 class Tenant(UUIDTimeStampedModel):
     """La empresa distribuidora (SaaS). No esta tenant-scoped a si misma."""
 
-    name = models.CharField(max_length=255)
+    razon_social = models.CharField(max_length=255)
+    ruc = models.CharField(max_length=20, unique=True)
     slug = models.SlugField(max_length=255, unique=True)
 
     def __str__(self):
-        return self.name
+        return self.razon_social
 
 
 class TenantConfig(UUIDTimeStampedModel):
