@@ -14,6 +14,11 @@ class StockInsuficienteError(Exception):
     tenant no permite stock negativo."""
 
 
+class LimiteCreditoExcedidoError(Exception):
+    """BR-COB-04: la deuda acumulada del Cliente mas el total de este Pedido
+    superaria el max_credit_limit del tenant, sin autorizacion explicita."""
+
+
 def _stock_disponible(producto):
     """Stock Kardex - Reservas activas, en unidad base (BR-INV-01)."""
     movimientos = MovimientoInventario.objects.filter(producto=producto).exclude(
@@ -34,12 +39,16 @@ def _stock_disponible(producto):
 
 
 @transaction.atomic
-def confirmar_pedido(pedido, usuario):
-    """Transicion BORRADOR -> CONFIRMADO (BR-VENTA-01/02).
+def confirmar_pedido(pedido, usuario, autorizado_por_superior=False):
+    """Transicion BORRADOR -> CONFIRMADO (BR-VENTA-01/02, BR-COB-04).
 
     Por cada DetallePedido crea una ReservaInventario en unidad base (via
     factor_conversion de la Presentacion), validando que no se supere el
     stock disponible salvo que TenantConfig.allow_negative_stock lo permita.
+
+    Si la condicion de pago es CREDITO, valida que la deuda acumulada del
+    Cliente mas el total de este Pedido no supere max_credit_limit, salvo
+    que `autorizado_por_superior=True` (BR-COB-04).
 
     Usa select_for_update() sobre cada Producto involucrado para serializar
     confirmaciones concurrentes que compitan por el mismo stock (ADR-006).
@@ -49,6 +58,17 @@ def confirmar_pedido(pedido, usuario):
 
     with tenant_context(pedido.tenant_id):
         tenant_config = pedido.tenant.config
+
+        if pedido.condicion_pago == Pedido.CondicionPago.CREDITO and not autorizado_por_superior:
+            from apps.finance.services import deuda_acumulada_cliente
+
+            deuda_actual = deuda_acumulada_cliente(pedido.cliente)
+            if deuda_actual + pedido.total > tenant_config.max_credit_limit:
+                raise LimiteCreditoExcedidoError(
+                    f"Deuda acumulada ({deuda_actual}) + total del pedido ({pedido.total}) "
+                    f"superaria el limite de credito ({tenant_config.max_credit_limit})."
+                )
+
         detalles = pedido.detalles.select_related("presentacion__producto").all()
 
         for detalle in detalles:
