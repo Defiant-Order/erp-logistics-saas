@@ -4,7 +4,7 @@
 Este directorio contiene las definiciones de arquitectura de software, infraestructura y convenciones de código para el desarrollo del ERP Logístico. 
 
 **Índice de Navegación:**
-* 01 - ERD y Modelos de Datos: Diagrama relacional definitivo y reglas del ORM.
+* 01 - ERD y Modelos de Datos: Reglas del ORM e indice hacia los diagramas por dominio (01a/01b/01c).
 * 02 - Infraestructura y Operación: Configuración de contenedores, base de datos y redes.
 * 03 - Integraciones y Eventos: Webhooks de WhatsApp y eventos de dominio.
 * 04 - Convenciones de Desarrollo: Reglas estrictas para mantener limpio el monolito en Django.
