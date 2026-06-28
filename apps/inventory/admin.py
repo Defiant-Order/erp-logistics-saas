@@ -20,7 +20,7 @@ class ProveedorAdmin(admin.ModelAdmin):
 class DetalleOrdenCompraInline(admin.TabularInline):
     model = DetalleOrdenCompra
     extra = 1
-    fields = ("producto", "cantidad_solicitada", "costo_unitario")
+    fields = ("presentacion", "cantidad_solicitada", "costo_unitario")
 
 
 @admin.register(OrdenCompra)

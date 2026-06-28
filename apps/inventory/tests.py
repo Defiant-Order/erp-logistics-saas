@@ -2,7 +2,7 @@ from decimal import Decimal
 
 import pytest
 
-from apps.catalog.models import Producto
+from apps.catalog.models import Presentacion, Producto
 from apps.core.models import Tenant, User
 from apps.inventory.models import (
     Almacen,
@@ -39,6 +39,11 @@ def almacen(tenant):
     return Almacen.objects.create(tenant=tenant, nombre="Almacen Central")
 
 
+@pytest.fixture
+def presentacion(producto):
+    return Presentacion.objects.create(producto=producto, nombre="Caja", factor_conversion=Decimal("24"))
+
+
 @pytest.mark.django_db
 def test_orden_compra_inicia_en_borrador(tenant, usuario, proveedor):
     orden = OrdenCompra.objects.create(proveedor=proveedor, created_by=usuario)
@@ -63,15 +68,27 @@ def test_orden_compra_no_puede_tener_tenant_distinto_al_proveedor(tenant, usuari
 
 
 @pytest.mark.django_db
-def test_detalle_orden_compra_guarda_cantidad_y_costo(usuario, proveedor, producto):
+def test_detalle_orden_compra_se_pide_por_presentacion(usuario, proveedor, presentacion):
     orden = OrdenCompra.objects.create(proveedor=proveedor, created_by=usuario)
     detalle = DetalleOrdenCompra.objects.create(
-        orden_compra=orden, producto=producto, cantidad_solicitada=Decimal("50"), costo_unitario=Decimal("3.50")
+        orden_compra=orden, presentacion=presentacion, cantidad_solicitada=Decimal("10"), costo_unitario=Decimal("70")
     )
 
     assert detalle.tenant_id == orden.tenant_id
-    assert detalle.cantidad_solicitada == Decimal("50")
-    assert detalle.costo_unitario == Decimal("3.50")
+    assert detalle.cantidad_solicitada == Decimal("10")
+    assert detalle.costo_unitario == Decimal("70")
+    # el producto base se obtiene navegando la relacion, no se duplica el dato
+    assert detalle.presentacion.producto.sku == "CRIS-001"
+
+
+@pytest.mark.django_db
+def test_emitir_orden_compra_no_genera_movimientos_de_kardex(usuario, proveedor, presentacion):
+    orden = OrdenCompra.objects.create(proveedor=proveedor, created_by=usuario, estado=OrdenCompra.Estado.ENVIADA)
+    DetalleOrdenCompra.objects.create(
+        orden_compra=orden, presentacion=presentacion, cantidad_solicitada=Decimal("10"), costo_unitario=Decimal("70")
+    )
+
+    assert MovimientoInventario.unscoped.count() == 0
 
 
 @pytest.mark.django_db
