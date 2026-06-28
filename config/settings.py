@@ -109,9 +109,12 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/6.0/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = 'es-pe'
 
-TIME_ZONE = 'UTC'
+# Solo afecta la representacion (admin, templates). La base siempre
+# guarda en UTC porque USE_TZ=True, sin importar la hora de pared
+# del servidor Postgres, del contenedor o de la maquina local.
+TIME_ZONE = 'America/Lima'
 
 USE_I18N = True
 
