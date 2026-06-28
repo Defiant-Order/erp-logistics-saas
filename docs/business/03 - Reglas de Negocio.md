@@ -1,6 +1,6 @@
 # 03 - Reglas de Negocio
 ## Reglas de Abastecimiento
-* **BR-ABAST-01 (Mermas):** Productos dañados en recepción ingresan al Kardex hacia un almacén virtual de CUARENTENA. No suman al stock vendible.
+* **BR-ABAST-01 (Mermas):** Productos dañados en recepción ingresan al Kardex hacia un almacén virtual de CUARENTENA. No suman al stock vendible. **Regla transversal de implementación:** toda función que calcule stock disponible o stock físico (en cualquier app: ventas, inventario, finanzas) debe excluir explícitamente los movimientos cuyo almacén tenga `es_cuarentena=True`. No basta con que el almacén de cuarentena exista — cada cálculo de stock nuevo debe filtrarlo, no se hereda automáticamente.
 * **BR-ABAST-02 (Recepción Parcial):** Si llega menos stock del solicitado, la Orden transiciona a RECIBIDA_PARCIAL y permanece abierta esperando el remanente.
 * **BR-ABAST-03 (Excedentes):** El sistema bloquea el ingreso de cantidades superiores al 100% de la OC. Requiere adenda documental.
 
