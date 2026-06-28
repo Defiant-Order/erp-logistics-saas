@@ -48,7 +48,12 @@ INSTALLED_APPS = [
     'apps.inventory',
     'apps.sales',
     'apps.finance',
+    'apps.whatsapp',
 ]
+
+# WhatsApp Cloud API (ver docs/tech/03 y docs/tech/05)
+WHATSAPP_VERIFY_TOKEN = env('WHATSAPP_VERIFY_TOKEN', default='')
+WHATSAPP_APP_SECRET = env('WHATSAPP_APP_SECRET', default='')
 
 AUTH_USER_MODEL = 'core.User'
 

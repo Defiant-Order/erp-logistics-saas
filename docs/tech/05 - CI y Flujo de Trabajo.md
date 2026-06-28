@@ -13,6 +13,7 @@ La configuración sensible no vive en `config/settings.py`, se lee del entorno v
   * `DEBUG` — `True`/`False`.
   * `ALLOWED_HOSTS` — lista separada por comas.
   * `DATABASE_URL` — opcional. Si no está definida, Django usa SQLite local (`db.sqlite3`). Cuando se conecte Neon, se setea aquí con el formato `postgres://usuario:password@host:5432/db` y no se toca código.
+  * `WHATSAPP_VERIFY_TOKEN` / `WHATSAPP_APP_SECRET` — usados por el webhook de WhatsApp (`/api/webhooks/whatsapp/`). Ver `docs/tech/03 - Integraciones y Eventos` para el detalle del endpoint.
 
 ## 1.1. Zona horaria
 `USE_TZ = True` hace que Django guarde toda fecha/hora en UTC en la base de datos, sin importar la hora de pared del servidor Postgres (Neon), del contenedor Docker, o de la máquina local — eso es lo que nos hace resilientes a que esos tres relojes no coincidan. `TIME_ZONE = 'America/Lima'` solo controla cómo se *muestra* la hora (admin, templates); el dato persistido siempre es UTC.
