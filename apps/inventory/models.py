@@ -139,6 +139,15 @@ class MovimientoInventario(BaseModel):
     recepcion_compra = models.ForeignKey(
         RecepcionCompra, on_delete=models.PROTECT, null=True, blank=True, related_name="movimientos"
     )
+    reserva_inventario = models.ForeignKey(
+        "sales.ReservaInventario",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="movimientos",
+        help_text="Origen de una SALIDA real al despachar (BR-VENTA-04). "
+        "Permite revertir el stock con precision si la entrega falla (BR-COB-03).",
+    )
 
     def save(self, *args, **kwargs):
         if not self._state.adding:
