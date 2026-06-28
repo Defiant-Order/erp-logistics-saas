@@ -57,6 +57,12 @@ class DetalleOrdenCompra(BaseModel):
     )
     cantidad_solicitada = models.DecimalField(max_digits=12, decimal_places=4)
     costo_unitario = models.DecimalField(max_digits=12, decimal_places=4)
+    cantidad_recibida = models.DecimalField(
+        max_digits=12,
+        decimal_places=4,
+        default=0,
+        help_text="Acumulado recibido hasta ahora (BR-ABAST-02/03). Actualizado por el service de recepcion.",
+    )
 
     def save(self, *args, **kwargs):
         if not self.tenant_id and self.orden_compra_id:
@@ -66,13 +72,17 @@ class DetalleOrdenCompra(BaseModel):
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return f"{self.cantidad_solicitada} de producto {self.producto_id} (OC {self.orden_compra_id})"
+        return f"{self.cantidad_solicitada} de {self.presentacion_id} (OC {self.orden_compra_id})"
 
 
 class Almacen(BaseModel):
     """Ubicacion fisica de custodia. Ver docs/business/01."""
 
     nombre = models.CharField(max_length=255)
+    es_cuarentena = models.BooleanField(
+        default=False,
+        help_text="Almacen virtual para mercaderia danada (BR-ABAST-01). No suma a stock vendible.",
+    )
 
     class Meta:
         constraints = [

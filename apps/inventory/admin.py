@@ -20,7 +20,7 @@ class ProveedorAdmin(admin.ModelAdmin):
 class DetalleOrdenCompraInline(admin.TabularInline):
     model = DetalleOrdenCompra
     extra = 1
-    fields = ("presentacion", "cantidad_solicitada", "costo_unitario")
+    fields = ("presentacion", "cantidad_solicitada", "cantidad_recibida", "costo_unitario")
 
 
 @admin.register(OrdenCompra)
@@ -32,7 +32,7 @@ class OrdenCompraAdmin(admin.ModelAdmin):
 
 @admin.register(Almacen)
 class AlmacenAdmin(admin.ModelAdmin):
-    list_display = ("nombre", "tenant", "is_active")
+    list_display = ("nombre", "es_cuarentena", "tenant", "is_active")
     list_filter = ("tenant",)
 
 

@@ -16,7 +16,9 @@ class StockInsuficienteError(Exception):
 
 def _stock_disponible(producto):
     """Stock Kardex - Reservas activas, en unidad base (BR-INV-01)."""
-    movimientos = MovimientoInventario.objects.filter(producto=producto).aggregate(
+    movimientos = MovimientoInventario.objects.filter(producto=producto).exclude(
+        almacen__es_cuarentena=True
+    ).aggregate(
         entradas=Sum("cantidad", filter=Q(tipo=MovimientoInventario.Tipo.ENTRADA)),
         salidas=Sum("cantidad", filter=Q(tipo=MovimientoInventario.Tipo.SALIDA)),
     )
