@@ -41,7 +41,7 @@ Pasos del job `test`:
 3. Instala `requirements/local.txt` (incluye dependencias de producción + testing + lint).
 4. `ruff check .` — falla el build si hay errores de lint.
 5. `python manage.py makemigrations --check --dry-run` — falla si hay cambios de modelos sin migración generada.
-6. `pytest` — corre la suite de tests contra SQLite (mismo motor que en local, por ahora).
+6. `pytest` — corre la suite de tests contra SQLite (mismo motor que en local, por ahora). Mientras no exista ninguna app de negocio, `pytest` devuelve exit code 5 ("no tests collected"); el step lo trata como éxito en vez de fallo, porque no es un error real. En cuanto exista al menos un test, cualquier código de salida distinto de 0 o 5 sí rompe el build.
 
 El CI **no usa Postgres todavía**: se mantiene simple mientras el proyecto recién empieza. Cuando se introduzca Postgres real en algún entorno, se debe:
 1. Agregar el servicio `postgres` al job (imagen, env, healthcheck).

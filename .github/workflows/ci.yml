@@ -33,4 +33,11 @@ jobs:
         run: python manage.py makemigrations --check --dry-run
 
       - name: Run tests
-        run: pytest
+        run: |
+          pytest
+          code=$?
+          if [ $code -eq 5 ]; then
+            echo "No se recolectaron tests todavia (fase inicial del proyecto), no se considera fallo."
+            exit 0
+          fi
+          exit $code
