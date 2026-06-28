@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from apps.sales.models import Cliente, DetallePedido, Pedido
+from apps.sales.models import Cliente, DetallePedido, Pedido, PedidoEstadoHistorico, ReservaInventario
 
 
 @admin.register(Cliente)
@@ -29,3 +29,25 @@ class PedidoAdmin(admin.ModelAdmin):
     )
     list_filter = ("estado_logistico", "estado_financiero", "condicion_pago", "tenant")
     inlines = [DetallePedidoInline]
+
+
+@admin.register(ReservaInventario)
+class ReservaInventarioAdmin(admin.ModelAdmin):
+    list_display = ("id", "pedido", "producto", "cantidad", "estado", "tenant")
+    list_filter = ("estado", "tenant")
+
+
+@admin.register(PedidoEstadoHistorico)
+class PedidoEstadoHistoricoAdmin(admin.ModelAdmin):
+    list_display = ("id", "pedido", "estado_logistico", "changed_by", "created_at")
+    list_filter = ("estado_logistico", "tenant")
+
+    # Inmutable por diseno: solo lectura, igual que MovimientoInventario.
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
