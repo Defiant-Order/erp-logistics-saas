@@ -8,3 +8,4 @@ Este directorio contiene las definiciones de arquitectura de software, infraestr
 * 02 - Infraestructura y Operación: Configuración de contenedores, base de datos y redes.
 * 03 - Integraciones y Eventos: Webhooks de WhatsApp y eventos de dominio.
 * 04 - Convenciones de Desarrollo: Reglas estrictas para mantener limpio el monolito en Django.
+* 05 - CI y Flujo de Trabajo: Variables de entorno, cómo correr tests/lint en local, y el pipeline de CI/branch protection en GitHub.

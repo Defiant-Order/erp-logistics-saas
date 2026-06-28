@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main, develop]
+    branches: [main]
   pull_request:
     branches: [main]
 
@@ -10,24 +10,8 @@ jobs:
   test:
     runs-on: ubuntu-latest
 
-    services:
-      postgres:
-        image: postgres:16
-        env:
-          POSTGRES_DB: erp_test
-          POSTGRES_USER: erp
-          POSTGRES_PASSWORD: erp
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
     env:
       SECRET_KEY: ci-secret-key-not-for-production
-      DATABASE_URL: postgres://erp:erp@localhost:5432/erp_test
       DEBUG: "False"
 
     steps:
@@ -37,12 +21,16 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.13"
+          cache: pip
 
       - name: Install dependencies
         run: pip install -r requirements/local.txt
 
+      - name: Lint (ruff)
+        run: ruff check .
+
       - name: Check migrations are consistent
-        run: python manage.py migrate --check
+        run: python manage.py makemigrations --check --dry-run
 
       - name: Run tests
         run: pytest
