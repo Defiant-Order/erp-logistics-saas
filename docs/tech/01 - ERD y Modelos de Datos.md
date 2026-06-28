@@ -9,61 +9,15 @@
 * **Trazabilidad de Autoría:** Toda entidad transaccional crítica (`OrdenCompra`, `RecepcionCompra`, `Pedido`, `Pago`) debe incluir un campo `created_by` (FK a User) para auditar quién ejecutó la acción. **Importante:** `created_by` no forma parte de `TimeStampedModel`/`BaseModel` — se agrega explícitamente solo en esas entidades transaccionales, no en catálogos ni tablas de configuración (ej. `Producto`, `TenantConfig` no lo necesitan).
 * **Control de Idempotencia:** Implementar una tabla o modelo abstracto `ExternalReference` (`source_system`, `external_id`, `processed_at`) para garantizar que un webhook duplicado de WhatsApp o pasarela de pago no genere dos pedidos o dos pagos.
 
-## Diagrama Entidad-Relación Definitivo
+## Diagramas Entidad-Relación
 
-```mermaid
-erDiagram
-    %% Core & Configuración
-    TENANT ||--|| TENANT_CONFIG : "posee reglas en"
-    TENANT ||--o{ USUARIO : "tiene"
-    
-    TENANT_CONFIG {
-        uuid tenant_id PK
-        boolean allow_negative_stock
-        int reservation_ttl_hours
-        decimal max_credit_limit
-    }
+El ERD se divide por dominio para que cada archivo quede corto y se mantenga
+junto al codigo que describe (un PR que toca `apps.sales` solo edita el
+archivo de ventas, no un diagrama monolitico compartido):
 
-    %% Catálogo
-    PRODUCTO ||--|{ PRESENTACION : "se transacciona como"
-    
-    %% Inventario & Compras
-    PROVEEDOR ||--o{ ORDEN_COMPRA : "recibe"
-    ORDEN_COMPRA ||--o{ RECEPCION_COMPRA : "se formaliza ingreso en"
-    RECEPCION_COMPRA ||--o{ MOVIMIENTO_INVENTARIO : "genera"
-    ALMACEN ||--o{ MOVIMIENTO_INVENTARIO : "registra"
-    PRODUCTO ||--o{ MOVIMIENTO_INVENTARIO : "afecta stock base"
-    
-    %% Comercial (El núcleo)
-    CLIENTE ||--o{ PEDIDO : "realiza"
-    PEDIDO ||--|{ DETALLE_PEDIDO : "contiene"
-    PRESENTACION ||--o{ DETALLE_PEDIDO : "incluye"
-    PEDIDO ||--o{ PEDIDO_ESTADO_HISTORICO : "audita cambios en"
-    
-    PEDIDO {
-        uuid id PK
-        uuid tenant_id FK
-        uuid cliente_id FK
-        string condicion_pago "CONTADO, CONTRA_ENTREGA, CREDITO (TextChoices)"
-        string estado_logistico "PREPARACION, DESPACHADO, ENTREGADO... (TextChoices)"
-        string estado_financiero "PENDIENTE, PAGADO, CON_DEUDA (TextChoices)"
-        decimal total
-    }
+* [01a - ERD Core y Catalogo](01a%20-%20ERD%20Core%20y%20Catalogo.md) — Tenant, TenantConfig, Usuario, Producto, Presentacion.
+* [01b - ERD Compras e Inventario](01b%20-%20ERD%20Compras%20e%20Inventario.md) — Proveedor, OrdenCompra, DetalleOrdenCompra, Almacen, RecepcionCompra, MovimientoInventario.
+* [01c - ERD Ventas y Finanzas](01c%20-%20ERD%20Ventas%20y%20Finanzas.md) — Cliente, Pedido, DetallePedido, ReservaInventario, PedidoEstadoHistorico, CuentaPorCobrar, Pago.
 
-    %% Reservas (Vínculo Ventas-Inventario)
-    PEDIDO ||--o{ RESERVA_INVENTARIO : "genera"
-    PRODUCTO ||--o{ RESERVA_INVENTARIO : "bloquea disponibilidad"
-    
-    %% Finanzas & Despacho
-    PEDIDO ||--o{ ENTREGA_PEDIDO : "se despacha en"
-    PEDIDO ||--o{ PAGO : "recibe dinero vía"
-    PEDIDO ||--o| CUENTA_POR_COBRAR : "origina deuda (Solo si es a Crédito)"
-    CUENTA_POR_COBRAR ||--o{ PAGO : "se amortiza con"
-    
-    PAGO {
-        uuid id PK
-        uuid pedido_id FK
-        decimal monto
-        string metodo_pago "YAPE, PLIN, EFECTIVO (TextChoices)"
-        string referencia
-    }
+Las reglas del ORM de arriba aplican a las tres por igual (UUID PK, `BaseModel`,
+Decimal, TextChoices, etc.) — no se repiten en cada archivo.
