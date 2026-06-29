@@ -1,0 +1,19 @@
+# Referencia para el Stack de Portainer en el mini-servidor.
+# La imagen la construye y publica el workflow de GitHub Actions
+# (.github/workflows/deploy.yml) en cada push a main.
+#
+# No publica ningun puerto del host: cloudflared-tunnel llega a este
+# contenedor por nombre via la red backend-net (ver docs/tech/02).
+services:
+  web:
+    image: ghcr.io/defiant-order/erp-logistics-saas:latest
+    container_name: erp-django
+    restart: unless-stopped
+    env_file:
+      - .env
+    networks:
+      - backend-net
+
+networks:
+  backend-net:
+    external: true

@@ -43,3 +43,15 @@ jobs:
             exit 0
           fi
           exit $code
+
+  docker-build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verificar que la imagen construye (sin publicar)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: false
