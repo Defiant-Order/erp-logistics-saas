@@ -145,3 +145,30 @@ def test_webhook_ignora_numero_no_configurado(settings_whatsapp):
 
     assert response.status_code == 200
     assert EventoWebhookWhatsApp.unscoped.count() == 0
+
+
+@pytest.mark.django_db
+def test_webhook_loguea_numero_no_configurado_para_diagnostico_sin_shell(settings_whatsapp, caplog):
+    client = Client()
+    body = json.dumps(_payload_mensaje("000000000000000")).encode()
+
+    client.post(
+        reverse("whatsapp-webhook"), data=body, content_type="application/json",
+        HTTP_X_HUB_SIGNATURE_256=_firmar(body),
+    )
+
+    assert "no tiene ConfiguracionWhatsApp asociada" in caplog.text
+
+
+@pytest.mark.django_db
+def test_webhook_loguea_evento_guardado_exitosamente(settings_whatsapp, configuracion, caplog):
+    caplog.set_level("INFO")
+    client = Client()
+    body = json.dumps(_payload_mensaje(configuracion.phone_number_id, wamid="wamid.LOGTEST")).encode()
+
+    client.post(
+        reverse("whatsapp-webhook"), data=body, content_type="application/json",
+        HTTP_X_HUB_SIGNATURE_256=_firmar(body),
+    )
+
+    assert "wamid.LOGTEST guardado" in caplog.text

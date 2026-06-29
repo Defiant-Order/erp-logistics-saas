@@ -135,3 +135,21 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
+
+
+# Logging
+# Todo va a stdout (visible con `docker logs` / pestaña Logs de Portainer,
+# sin necesidad de entrar al shell del contenedor para diagnosticar).
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'root': {
+        'handlers': ['console'],
+        'level': 'INFO',
+    },
+}

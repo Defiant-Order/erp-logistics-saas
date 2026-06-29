@@ -1,6 +1,7 @@
 import hashlib
 import hmac
 import json
+import logging
 
 from django.conf import settings
 from django.http import HttpResponse, JsonResponse
@@ -9,6 +10,8 @@ from django.views.decorators.csrf import csrf_exempt
 from apps.whatsapp.models import ConfiguracionWhatsApp, EventoWebhookWhatsApp
 from common.models import ExternalReference
 from common.tenant_context import tenant_context
+
+logger = logging.getLogger(__name__)
 
 
 @csrf_exempt
@@ -30,7 +33,10 @@ def _verificar_suscripcion(request):
     challenge = request.GET.get("hub.challenge", "")
 
     if modo == "subscribe" and token == settings.WHATSAPP_VERIFY_TOKEN:
+        logger.info("whatsapp webhook: handshake de verificacion exitoso")
         return HttpResponse(challenge, content_type="text/plain")
+
+    logger.warning("whatsapp webhook: handshake de verificacion rechazado (modo=%s)", modo)
     return HttpResponse(status=403)
 
 
@@ -47,6 +53,7 @@ def _firma_valida(request):
 
 def _recibir_evento(request):
     if not _firma_valida(request):
+        logger.warning("whatsapp webhook: firma invalida, peticion rechazada")
         return HttpResponse(status=403)
 
     payload = json.loads(request.body)
@@ -66,17 +73,25 @@ def _procesar_cambio(valor):
     phone_number_id = valor.get("metadata", {}).get("phone_number_id")
     configuracion = ConfiguracionWhatsApp.unscoped.filter(phone_number_id=phone_number_id).first()
     if configuracion is None:
-        return  # numero no configurado en ningun tenant todavia
+        logger.warning(
+            "whatsapp webhook: phone_number_id '%s' no tiene ConfiguracionWhatsApp asociada, evento descartado",
+            phone_number_id,
+        )
+        return
 
     with tenant_context(configuracion.tenant_id):
         for mensaje in valor.get("messages", []):
             external_id = mensaje["id"]
             if ExternalReference.objects.filter(source_system="whatsapp", external_id=external_id).exists():
-                continue  # ya procesado, esto es un reintento de Meta
+                logger.info("whatsapp webhook: external_id %s ya procesado, reintento de Meta ignorado", external_id)
+                continue
 
             ExternalReference.objects.create(
                 tenant=configuracion.tenant, source_system="whatsapp", external_id=external_id
             )
             EventoWebhookWhatsApp.objects.create(
                 tenant=configuracion.tenant, external_id=external_id, payload=mensaje
+            )
+            logger.info(
+                "whatsapp webhook: evento %s guardado para tenant %s", external_id, configuracion.tenant_id
             )
