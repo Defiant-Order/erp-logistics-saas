@@ -34,5 +34,11 @@ jobs:
           tags: ghcr.io/${{ github.repository }}:latest
 
       - name: Disparar redeploy en Portainer
-        if: ${{ secrets.PORTAINER_WEBHOOK_URL != '' }}
-        run: curl -fsS -X POST "${{ secrets.PORTAINER_WEBHOOK_URL }}"
+        env:
+          WEBHOOK_URL: ${{ secrets.PORTAINER_WEBHOOK_URL }}
+        run: |
+          if [ -n "$WEBHOOK_URL" ]; then
+            curl -fsS -X POST "$WEBHOOK_URL"
+          else
+            echo "PORTAINER_WEBHOOK_URL no esta configurado, se omite el redeploy."
+          fi
