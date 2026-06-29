@@ -4,13 +4,22 @@
 #
 # No publica ningun puerto del host: cloudflared-tunnel llega a este
 # contenedor por nombre via la red backend-net (ver docs/tech/02).
+#
+# Las variables ${...} se rellenan desde la seccion "Environment variables"
+# del Stack en Portainer (NO desde un archivo .env -- ese archivo no existe
+# en el servidor a menos que lo subas tu mismo).
 services:
   web:
     image: ghcr.io/defiant-order/erp-logistics-saas:latest
     container_name: erp-django
     restart: unless-stopped
-    env_file:
-      - .env
+    environment:
+      SECRET_KEY: ${SECRET_KEY}
+      DEBUG: ${DEBUG}
+      ALLOWED_HOSTS: ${ALLOWED_HOSTS}
+      DATABASE_URL: ${DATABASE_URL}
+      WHATSAPP_VERIFY_TOKEN: ${WHATSAPP_VERIFY_TOKEN}
+      WHATSAPP_APP_SECRET: ${WHATSAPP_APP_SECRET}
     networks:
       - backend-net
 
