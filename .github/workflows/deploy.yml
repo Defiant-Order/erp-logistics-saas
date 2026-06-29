@@ -33,12 +33,12 @@ jobs:
           push: true
           tags: ghcr.io/defiant-order/erp-logistics-saas:latest
 
-      - name: Disparar redeploy en Portainer
+      - name: Disparar redeploy en Portainer (best-effort, no bloquea el pipeline)
         env:
           WEBHOOK_URL: ${{ secrets.PORTAINER_WEBHOOK_URL }}
         run: |
           if [ -n "$WEBHOOK_URL" ]; then
-            curl -fsS -X POST "$WEBHOOK_URL"
+            curl -fsS -X POST "$WEBHOOK_URL" || echo "El webhook de Portainer fallo, pero la imagen ya se publico. Revisar el redeploy manualmente."
           else
             echo "PORTAINER_WEBHOOK_URL no esta configurado, se omite el redeploy."
           fi
